@@ -1,0 +1,77 @@
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  RUST_VERSION: 1.72.1
+  BUILD_ARGS: "--release --all-features"
+  BIN_NAME: "example"
+
+jobs:
+  build:
+    name: Release - ${{ matrix.platform.name }}
+    #if: startsWith( github.ref, 'refs/tags/v' ) || github.ref == 'refs/tags/test-release'
+    runs-on: ${{ matrix.platform.os || 'ubuntu-22.04' }}
+    strategy:
+      matrix:
+        platform:
+          # Linux
+          - name: Linux x86_64
+            target: x86_64-unknown-linux-gnu
+          - name: Linux aarch64
+            target: aarch64-unknown-linux-gnu
+
+          # Mac OS
+          - name: MacOS x86_64
+            target: x86_64-apple-darwin
+          - name: MacOS aarch64
+            target: aarch64-apple-darwin
+
+          # Windows
+          - name: Windows x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+
+    steps:
+    - name: Checkout Git repo
+      uses: actions/checkout@v3
+
+    # Linux & Windows
+    - name: Install rust toolchain
+      if: ${{ !contains(matrix.platform.target, 'apple') }}
+      uses: actions-rs/toolchain@v1
+      with:
+        profile: minimal
+        toolchain: "${{ env.RUST_VERSION }}"
+        override: true
+        target: ${{ matrix.platform.target }}
+        components: rustfmt, clippy
+    - name: Build ${{ matrix.platform.name }} binary
+      if: ${{ !contains(matrix.platform.target, 'apple') }}
+      uses: actions-rs/cargo@v1
+      with:
+        command: build
+        use-cross: ${{ !contains(matrix.platform.target, 'x86_64') }}
+        args: ${{ env.BUILD_ARGS }} --target ${{ matrix.platform.target }}
+
+    # Mac OS
+    - name: Login to DockerHub
+      if: contains(matrix.platform.target, 'apple')
+      uses: docker/login-action@v3
+      with:
+        username: deimosfr
+        password: dckr_pat_jinWsaQGDG-ywiD-2jHui1Ln-A8
+    - name: Build ${{ matrix.platform.name }} binary
+      if: contains(matrix.platform.target, 'apple')
+      run: |
+        docker run --rm --volume "${PWD}":/root/src --workdir /root/src joseluisq/rust-linux-darwin-builder:$RUST_VERSION \
+        sh -c "cargo build $BUILD_ARGS --target ${{ matrix.platform.target }}"
+    
+    - name: Store artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.platform.target }}--${{ env.BIN_NAME }}.zip
+        path: target/${{ matrix.platform.target }}/release/${{ env.BIN_NAME }}${{ contains(matrix.platform.target, 'windows') && '.exe' || '' }}
+        retention-days: 5
