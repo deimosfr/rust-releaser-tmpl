@@ -1,8 +1,5 @@
 on:
-  push:
-    branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  create:
 
 jobs:
   release:
@@ -40,40 +37,31 @@ jobs:
           #   cross: true
 
     steps:
-    - name: Checkout Git repo
+    - name: Checkout
       uses: actions/checkout@v3
     # Prerequisites
-    # - name: Install rust toolchain
-    #   uses: actions-rs/toolchain@v1
-    #   with:
-    #     profile: minimal
-    #     toolchain: stable
-    #     override: true
-    #     target: ${{ matrix.platform.target }}
-    #     components: rustfmt, clippy
-
-    - name: Install packages
-      run: apt-get update && apt-get install -y curl sudo jq
-    - name: Install Ubi
+    - name: Install dependencies
       run: |
-        curl --silent --location https://raw.githubusercontent.com/houseabsolute/ubi/master/bootstrap/bootstrap-ubi.sh | sh
-      env:
-        TARGET: /usr/bin
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-    - name: Build binary
-      uses: houseabsolute/actions-rust-cross@v0
+        apt update && apt install -y curl gcc docker.io
+    # - name: Login to Docker Hub
+    #   uses: docker/login-action@v3
+    #   with:
+    #     username: "deimosfr"
+    #     password: "dckr_pat_FXdDbMZB1tRWVgNWeWhdwSX58Ok"
+    - name: Install rust toolchain
+      uses: actions-rs/toolchain@v1
       with:
-        command: "build"
-        target: ${{ matrix.platform.target }}
+        profile: minimal
         toolchain: stable
-        args: "--all-features --release"
-        strip: true
-    # - name: Install cross
-    #   if: ${{ matrix.platform.cross }}
-    #   run: |
-    #     echo 'dckr_pat_FXdDbMZB1tRWVgNWeWhdwSX58Ok' | docker login --username deimosfr --password-stdin
-    #     cargo install cross
-    #     cross build --release --all-features --target ${{ matrix.platform.target }}
+        override: true
+        target: ${{ matrix.platform.target }}
+        components: rustfmt, clippy
+    - name: Install cross
+      if: ${{ matrix.platform.cross }}
+      run: |
+        echo 'dckr_pat_FXdDbMZB1tRWVgNWeWhdwSX58Ok' | docker login --username deimosfr --password-stdin
+        cargo install cross
+        cross build --release --all-features --target ${{ matrix.platform.target }}
     # - name: Windows - Install cross if cross-compiling
     #   if: matrix.platform.cross && contains(matrix.platform.os, 'windows')
     #   id: cross-windows
@@ -88,13 +76,13 @@ jobs:
     #   shell: bash
     #   run: |
     #     ${{ matrix.platform.cargo_command }} build --locked --release --target ${{ matrix.platform.target }}
-    # - name: Build binary
-    #   if: ${{ !matrix.platform.cross }}
-    #   uses: actions-rs/cargo@v1
-    #   with:
-    #     use-cross: ${{ matrix.platform.cross }}
-    #     command: build
-    #     args: --release --all-features --target ${{ matrix.platform.target }}
+    - name: Build binary
+      if: ${{ !matrix.platform.cross }}
+      uses: actions-rs/cargo@v1
+      with:
+        use-cross: ${{ matrix.platform.cross }}
+        command: build
+        args: --release --all-features --target ${{ matrix.platform.target }}
     # - name: Windows - Build binary
     #   if: contains(matrix.platform.os, 'windows')
     #   # We have to use the platform's native shell. If we use bash on
@@ -104,9 +92,9 @@ jobs:
     #   run: |
     #     & ${{ matrix.platform.cargo_command }} build --locked --release --target ${{ matrix.platform.target }}          
 
-    # - name: Store artifact
-    #   uses: actions/upload-artifact@v3
-    #   with:
-    #     name: ${{ matrix.platform.bin }}
-    #     path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
-    #     retention-days: 5
+    - name: Store artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.platform.bin }}
+        path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        retention-days: 5
