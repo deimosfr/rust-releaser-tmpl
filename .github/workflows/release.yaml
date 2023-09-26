@@ -1,0 +1,108 @@
+on:
+  create:
+
+jobs:
+  release:
+    name: Release - ${{ matrix.platform.os_name }}
+    runs-on: ${{ matrix.platform.os }}
+    #if: startsWith( github.ref, 'refs/tags/v' ) || github.ref == 'refs/tags/test-release'
+    strategy:
+      matrix:
+        platform:
+          # Linux
+          # - os_name: Linux-x86_64
+          #   os: ubuntu-22.04
+          #   target: x86_64-unknown-linux-gnu
+          #   bin: example
+          #   cross: false
+          - os_name: Linux-aarch64
+            os: ubuntu-22.04
+            target: aarch64-unknown-linux-gnu
+            bin: example
+            cross: true
+
+          # # Windows
+          # - os_name: Windows-aarch64
+          #   os: windows-latest
+          #   target: aarch64-pc-windows-msvc
+          #   bin: example.exe
+          #   cross: false
+
+          # Mac OS
+          # - os_name: MacOS-x86_64
+          #   #os: macos-12
+          #   os: ubuntu-22.04
+          #   target: x86_64-apple-darwin
+          #   bin: example
+          #   cross: true
+
+    steps:
+    - name: Checkout Git repo
+      uses: actions/checkout@v3
+    # Prerequisites
+    # - name: Install rust toolchain
+    #   uses: actions-rs/toolchain@v1
+    #   with:
+    #     profile: minimal
+    #     toolchain: stable
+    #     override: true
+    #     target: ${{ matrix.platform.target }}
+    #     components: rustfmt, clippy
+    - name: Install packages
+      run: apt update && apt install -y curl sudo jq
+    - name: Install Ubi
+      run: |
+        curl --silent --location https://raw.githubusercontent.com/houseabsolute/ubi/master/bootstrap/bootstrap-ubi.sh | sh
+      env:
+        TARGET: /usr/bin
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Build binary
+      uses: houseabsolute/actions-rust-cross@v0
+      with:
+        command: "build"
+        target: ${{ matrix.platform.target }}
+        toolchain: stable
+        args: "--all-features --release"
+        strip: true
+    # - name: Install cross
+    #   if: ${{ matrix.platform.cross }}
+    #   run: |
+    #     echo 'dckr_pat_FXdDbMZB1tRWVgNWeWhdwSX58Ok' | docker login --username deimosfr --password-stdin
+    #     cargo install cross
+    #     cross build --release --all-features --target ${{ matrix.platform.target }}
+    # - name: Windows - Install cross if cross-compiling
+    #   if: matrix.platform.cross && contains(matrix.platform.os, 'windows')
+    #   id: cross-windows
+    #   shell: powershell
+    #   run: |
+    #     .\bootstrap\bootstrap-ubi.ps1
+    #     .\ubi --project cross-rs/cross --in .          
+
+    # Build
+    # - name: "*Nix - Build binary"
+    #   if: ${{ !contains(matrix.platform.os, 'windows') }}
+    #   shell: bash
+    #   run: |
+    #     ${{ matrix.platform.cargo_command }} build --locked --release --target ${{ matrix.platform.target }}
+    # - name: Build binary
+    #   if: ${{ !matrix.platform.cross }}
+    #   uses: actions-rs/cargo@v1
+    #   with:
+    #     use-cross: ${{ matrix.platform.cross }}
+    #     command: build
+    #     args: --release --all-features --target ${{ matrix.platform.target }}
+    # - name: Windows - Build binary
+    #   if: contains(matrix.platform.os, 'windows')
+    #   # We have to use the platform's native shell. If we use bash on
+    #   # Windows then OpenSSL complains that the Perl it finds doesn't use
+    #   # the platform's native paths and refuses to build.
+    #   shell: powershell
+    #   run: |
+    #     & ${{ matrix.platform.cargo_command }} build --locked --release --target ${{ matrix.platform.target }}          
+
+    # - name: Store artifact
+    #   uses: actions/upload-artifact@v3
+    #   with:
+    #     name: ${{ matrix.platform.bin }}
+    #     path: target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+    #     retention-days: 5
