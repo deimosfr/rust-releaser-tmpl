@@ -77,6 +77,7 @@ jobs:
 
   release:
     name: Release
+    needs: [build]
     #if: startsWith( github.ref, 'refs/tags/v' ) || github.ref == 'refs/tags/test-release'
     runs-on: ubuntu-22.04
     steps:
