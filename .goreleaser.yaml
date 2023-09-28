@@ -1,0 +1,24 @@
+project_name: example
+builds:
+  - id: "Linux and Mac"
+    main: .main.go
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    binary: example
+    hooks:
+      post:
+        - cmd: find .
+archives:
+  - format: binary
+    name_template: "{{ .Arch }}-{{ .Os }}--{{ .ProjectName }}"
+checksum:
+  name_template: "checksums.txt"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
