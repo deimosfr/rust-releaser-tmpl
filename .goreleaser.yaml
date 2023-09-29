@@ -9,6 +9,9 @@ builds:
       - amd64
       - arm64
     binary: example
+    ignore:
+      - goos: windows
+        goarch: arm64
     hooks:
       post:
         - ./.goreleaser_hook.sh {{ .Arch }} {{ .Os }} {{ .ProjectName }}
