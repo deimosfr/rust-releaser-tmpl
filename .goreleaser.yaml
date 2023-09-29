@@ -15,7 +15,7 @@ builds:
     hooks:
       post:
         - |
-          set -x
+          #!/usr/bin/env bash
           go_arch={{ .Arch }}
           go_os={{ .Os }}
           project_name={{ .ProjectName }}

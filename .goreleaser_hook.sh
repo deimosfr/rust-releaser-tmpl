@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-set -x
 go_arch=$1
 go_os=$2
 project_name=$3
