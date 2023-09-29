@@ -76,7 +76,7 @@ jobs:
       with:
         name: ${{ matrix.platform.target }}-${{ env.BIN_NAME }}
         path: target/${{ matrix.platform.target }}/release/${{ env.BIN_NAME }}${{ contains(matrix.platform.target, 'windows') && '.exe' || '' }}
-        retention-days: 5
+        retention-days: 1
 
   release:
     name: Release
