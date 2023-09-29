@@ -102,3 +102,4 @@ jobs:
         args: release --clean --skip=validate
       env:
         GITHUB_TOKEN: ${{ secrets.GH_TOKEN_RUST_CROSS }}
+    - run: find .
