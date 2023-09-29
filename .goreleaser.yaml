@@ -1,19 +1,17 @@
 project_name: example
 builds:
-  - id: "Linux and Mac"
-    main: goreleaser.go
+  - main: goreleaser.go
     goos:
       - linux
       - darwin
+      - windows
     goarch:
       - amd64
+      - arm64
     binary: example
     hooks:
       post:
-        - cmd: find .
-archives:
-  - format: binary
-    name_template: "{{ .Arch }}-{{ .Os }}--{{ .ProjectName }}"
+        - ./.goreleaser_hook.sh {{ .Arch }} {{ .Os }} {{ .ProjectName }}
 checksum:
   name_template: "checksums.txt"
 changelog:
